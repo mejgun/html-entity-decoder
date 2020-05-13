@@ -4,6 +4,8 @@ import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.HashMap.Strict           as HM
 import qualified Data.Text                     as T
+import           Data.Maybe                     ( fromJust )
+import Numeric (showInt,showHex)
 
 fileName :: String
 fileName = "entities.json"
@@ -13,7 +15,7 @@ data Entity = Entity
     , codepoints :: [Int]
     , characters :: T.Text
     }
-    deriving (Show)
+    deriving Show
 
 data Entities = Entities [Entity]
     deriving Show
@@ -21,23 +23,35 @@ data Entities = Entities [Entity]
 instance FromJSON Entities where
   parseJSON = parseEntities
 
+type MyMap = HM.HashMap T.Text T.Text
+
 main :: IO ()
 main = do
-  b <- decodeFileStrict fileName :: IO (Maybe Entities)
-  print b
+  a <- decodeFileStrict fileName :: IO (Maybe Entities)
+  let Entities b = fromJust a
+      m          = HM.empty :: HM.HashMap T.Text T.Text
+  print $ foldr foldF m b
+
+foldF :: Entity -> MyMap -> MyMap
+foldF e m = do
+  let m1 = HM.insert (name e) (characters e) m 
+      hexCodes = map (\c->T.concat["&#x",T.pack(showHex c ""),";"]) (codepoints e)
+      codes = map (\c->T.concat["&#",T.pack(showInt c ""),";"]) (codepoints e)
+      chars = map (\t->T.singleton (fst t)) $ T.zip (characters e) "1234567890"
+      tuples = zip codes chars
+      hexTuples = zip hexCodes chars
+      m2 = foldr (\(k,v) mp -> HM.insert k v mp) m1 tuples
+      m3 = foldr (\(k,v) mp -> HM.insert k v mp) m2 hexTuples  
+   in m3
 
 parseEntities :: Value -> Parser Entities
-parseEntities = withObject "entities" $ \o ->
-  return
-    $ Entities
-    $ (map
-        (\(ent, codes) -> do
-          let c  = getRes "codepoints" codes
-              ch = getRes "characters" codes
-          Entity { name = ent, codepoints = c, characters = ch }
-        )
-        (HM.toList o)
-      )
+parseEntities = withObject "entities" $ \o -> return $ Entities $ map
+  (\(ent, codes) ->
+    let c  = getRes "codepoints" codes
+        ch = getRes "characters" codes
+    in  Entity { name = T.toLower ent, codepoints = c, characters = ch }
+  )
+  (HM.toList o)
 
 getRes :: FromJSON a => T.Text -> Value -> a
 getRes t = getJsonResult . fromJSON . getMapValue t . getObject
