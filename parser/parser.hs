@@ -2,13 +2,16 @@
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Strict           as HM
-import qualified Data.Text                     as T
-import           Data.Maybe                     ( fromJust )
-import Numeric (showInt,showHex)
+import qualified Data.HashMap.Strict as HM
+import           Data.Maybe          (fromJust)
+import qualified Data.Text           as T
+import           Numeric             (showHex, showInt)
 
 fileName :: String
 fileName = "entities.json"
+
+resultFileName :: String
+resultFileName = "../src/Map.hs"
 
 data Entity = Entity
     { name       :: T.Text
@@ -29,19 +32,29 @@ main :: IO ()
 main = do
   a <- decodeFileStrict fileName :: IO (Maybe Entities)
   let Entities b = fromJust a
-      m          = HM.empty :: HM.HashMap T.Text T.Text
-  print $ foldr foldF m b
+      m = HM.empty :: HM.HashMap T.Text T.Text
+      res = T.concat
+              [ "--- GENERATED ---\n\n"
+              , "{-# LANGUAGE OverloadedStrings #-}\n"
+              , "module Map where\n\n"
+              , "import qualified Data.Text as T\n"
+              , "import qualified Data.HashMap.Strict as HM\n\n"
+              , "entities :: HM.HashMap T.Text T.Text\n"
+              , "entities = HM."
+              , T.pack  (show (foldl foldF m b))
+              ]
+   in writeFile resultFileName (T.unpack res)
 
-foldF :: Entity -> MyMap -> MyMap
-foldF e m = do
-  let m1 = HM.insert (name e) (characters e) m 
+foldF :: MyMap ->Entity ->  MyMap
+foldF m e = do
+  let m1 = HM.insert (name e) (characters e) m
       hexCodes = map (\c->T.concat["&#x",T.pack(showHex c ""),";"]) (codepoints e)
       codes = map (\c->T.concat["&#",T.pack(showInt c ""),";"]) (codepoints e)
       chars = map (\t->T.singleton (fst t)) $ T.zip (characters e) "1234567890"
       tuples = zip codes chars
       hexTuples = zip hexCodes chars
-      m2 = foldr (\(k,v) mp -> HM.insert k v mp) m1 tuples
-      m3 = foldr (\(k,v) mp -> HM.insert k v mp) m2 hexTuples  
+      m2 = foldl (\mp (k,v) -> HM.insert k v mp) m1 tuples
+      m3 = foldl (\mp (k,v) -> HM.insert k v mp) m2 hexTuples
    in m3
 
 parseEntities :: Value -> Parser Entities

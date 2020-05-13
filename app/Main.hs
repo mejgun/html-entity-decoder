@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import Lib
+import           Decoder
 
 main :: IO ()
-main = someFunc
+main = print $ decode "can&#039;t &amp;"

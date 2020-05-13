@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1b5c744c2cf765d9c11b21c40d657d5c2ab9b920b9ff5de53bb451bcc14e27e9
+-- hash: f93a4c4688759ad5134971697f381ac44414d87e3564778733a64a0fd5910aba
 
 name:           html-entity-decoder
 version:        0.1.0.0
@@ -27,7 +27,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Decoder
+      Map
   other-modules:
       Paths_html_entity_decoder
   hs-source-dirs:
