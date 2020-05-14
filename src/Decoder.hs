@@ -19,14 +19,14 @@ foldF (res, acc) c = case T.singleton c of
   ";" ->
     let acc'   = T.concat [acc, ";"]
         newRes = fromMaybe acc' $ HM.lookup (fixEnt acc') entities
-     in (T.concat [res, newRes], T.empty)
+    in  (T.concat [res, newRes], T.empty)
   char -> if T.null acc
     then (T.concat [res, char], acc)
     else (res, T.concat [acc, char])
 
 fixEnt :: T.Text -> T.Text
-fixEnt t = do
-    let c = T.count "0" t
-        t' = foldl (\acc _ -> T.replace "&#0" "&#" acc) t [1..c]
-     in T.toLower t'
+fixEnt t =
+  let c  = T.count "0" t
+      t' = iterate (T.replace "&#0" "&#") t !! c
+  in  T.toLower t'
 

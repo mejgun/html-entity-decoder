@@ -5,4 +5,4 @@ module Main where
 import           Decoder
 
 main :: IO ()
-main = print $ decode "can&#039;t &amp;"
+main = print $ decode "can&#00000000039;t &amp;"
